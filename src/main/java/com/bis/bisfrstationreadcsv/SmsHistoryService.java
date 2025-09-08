@@ -84,8 +84,10 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
                 "order by decision_date desc, smsForm_id asc" +
                 "",servername);
 
-        List<SmsHistoryVO> smsHistoryVOS = jdbcTemplate.query(query, new BeanPropertyRowMapper<>(SmsHistoryVO.class));
-        System.out.println(LocalDateTime.now() + " - " + servername + " - 조회 끝(리스트수 : " + smsHistoryVOS + " 건)");
+        List<SmsHistoryVO> smsHistoryVOS = new ArrayList<>();
+        smsHistoryVOS = jdbcTemplate.query(query, new BeanPropertyRowMapper<>(SmsHistoryVO.class));
+
+        System.out.println(LocalDateTime.now() + " - " + servername + " - 조회 끝(리스트수 : " + smsHistoryVOS.size() + " 건)");
         return smsHistoryVOS;
     }
 
