@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.bis</groupId>
-    <artifactId>BISFrStationReadCSV</artifactId>
+    <artifactId>BISLinkServerGuard</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>BISFrStationReadCSV</name>
-    <description>BISFrStationReadCSV</description>
+    <name>BISLinkServerGuard</name>
+    <description>BISLinkServerGuard</description>
     <url/>
     <licenses>
         <license/>
