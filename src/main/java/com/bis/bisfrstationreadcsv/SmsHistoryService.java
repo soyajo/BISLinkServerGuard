@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,20 +22,23 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private static final String LOG_DIR = "C:\\work\\BISLinkServerGuard\\log\\";
+
+    private String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
     public void checkServer(String serverName) throws IOException {
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         List<SmsHistoryVO> smsHistoryVOS = this.readSmsHistory(serverName);
         if(smsHistoryVOS != null && smsHistoryVOS.size() > 0) {
             for (SmsHistoryVO smsHistoryVO : smsHistoryVOS) {
                 if(smsHistoryVO.getSmsValue().contains("복구완료")){
-                    // 문제 없음. 로그 남기기용
                     break;
                 }else if(smsHistoryVO.getSmsValue().contains("복구필요")) {
                     // 재기동 시작
                     if (serverName.contains("EB")) {
                         killProcess("EBDataClt1.exe");
                         killProcess("EBCommclt1.exe");
+
                     } else if (serverName.contains("지자체")) {
                         killProcess("PTIECommsvr.exe");
                         killProcess("PTIEDataSvr.exe");
@@ -43,12 +47,11 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
                     }else{
                         continue;
                     }
-
                     // 자동으로 켜지는 건 알아서 다른 프로그램에서 됌
 
                 }else {
                     // 예외문자 확인
-                    System.out.println("예외문자 : " + smsHistoryVO.getSmsValue());
+                    System.out.println(LocalDateTime.now() + " - " + serverName + " - 예외문자 : " + smsHistoryVO.getSmsValue());
                 }
             }
         }
@@ -56,30 +59,50 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
     }
 
     private void killProcess(String processName) {
+        writeLog(today, processName + " : 종료 시작");
+        System.out.println(LocalDateTime.now() + " - " + processName + " - 종료 시작");
         try {
             String command = String.format("taskkill /F /IM %s", processName);
             Process process = Runtime.getRuntime().exec(command);
             process.waitFor();  // 종료될 때까지 대기
-            System.out.println(processName + " 종료 완료");
+            writeLog(today, processName + " 종료 완료");
+            System.out.println(LocalDateTime.now() + " - " + processName + " - 종료 완료");
         } catch (Exception e) {
-            System.err.println(processName + " 종료 실패: " + e.getMessage());
+            writeLog(today, processName + " 종료 실패: " + e.getMessage());
+            System.out.println(LocalDateTime.now() + " - " + processName + " - 종료 실패");
         }
     }
 
     private List<SmsHistoryVO> readSmsHistory(String servername) throws IOException {
-
+        System.out.println(LocalDateTime.now() + " - " + servername + " - 조회 시작");
         String query = String.format("select *\n" +
                 "from SMS_HISTORY\n" +
                 "where mobile_no = '010-4693-8128'\n" +
-                "and sms_value like '%<복구%'\n" +
-                "and sms_value like '%s'\n" +
-                "and decision_date between systimestamp - interval '20' second and systimestamp\n" +
+                "and sms_value like '%%<복구%%'\n" +
+                "and sms_value like '%%%s%%'\n" +
+                "and decision_date between systimestamp - interval '30' second and systimestamp\n" +
                 "order by decision_date desc, smsForm_id asc" +
                 "",servername);
 
         List<SmsHistoryVO> smsHistoryVOS = jdbcTemplate.query(query, new BeanPropertyRowMapper<>(SmsHistoryVO.class));
-
+        System.out.println(LocalDateTime.now() + " - " + servername + " - 조회 끝(리스트수 : " + smsHistoryVOS + " 건)");
         return smsHistoryVOS;
+    }
+
+    private void writeLog(String date, String message) {
+        File dir = new File(LOG_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs(); // 폴더 없으면 생성
+        }
+
+        File logFile = new File(dir, date + ".log");
+        try (BufferedWriter bw = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(logFile, true), StandardCharsets.UTF_8))) {
+            bw.write(java.time.LocalDateTime.now() + " - " + message);
+            bw.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

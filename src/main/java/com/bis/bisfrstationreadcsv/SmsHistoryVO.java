@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SmsHistoryVO {
-    private LocalDateTime decisionDate;
-    private String operator_id;
+    private LocalDateTime decisionate;
+    private String operatorId;
     private String mobileNo;
     private String targetTp;
     private String damageLv;
