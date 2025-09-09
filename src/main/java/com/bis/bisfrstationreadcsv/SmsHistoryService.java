@@ -38,17 +38,17 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
                     if (serverName.contains("EB")) {
                         killProcess("EBDataClt1.exe");
                         killProcess("EBCommclt1.exe");
-
                     } else if (serverName.contains("지자체")) {
                         killProcess("PTIECommsvr.exe");
                         killProcess("PTIEDataSvr.exe");
-                    } else if (serverName.contains("데이터체크")) {
+                    } else if (serverName.contains("시설물")) {
                         // 데이터 체크 프로세스 작성
-                    }else{
-                        continue;
+                        killProcess("SDCSvr.exe");
+                        killProcess("SDDSvr.exe");
+                        killProcess("DataCheckPrj.exe");
                     }
+                    break;
                     // 자동으로 켜지는 건 알아서 다른 프로그램에서 됌
-
                 }else {
                     // 예외문자 확인
                     System.out.println(LocalDateTime.now() + " - " + serverName + " - 예외문자 : " + smsHistoryVO.getSmsValue());
