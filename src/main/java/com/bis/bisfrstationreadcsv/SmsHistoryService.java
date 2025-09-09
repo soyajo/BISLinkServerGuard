@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public interface SmsHistoryService {
-    public void checkServer(String serverName) throws IOException;
+    public void checkServer(String serverName, String telNum, String selectDelay) throws IOException;
 }
 
 @Service
@@ -26,9 +26,9 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
 
     private String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-    public void checkServer(String serverName) throws IOException {
+    public void checkServer(String serverName, String telNum, String selectDelay) throws IOException {
 
-        List<SmsHistoryVO> smsHistoryVOS = this.readSmsHistory(serverName);
+        List<SmsHistoryVO> smsHistoryVOS = this.readSmsHistory(serverName, telNum, selectDelay);
         if(smsHistoryVOS != null && smsHistoryVOS.size() > 0) {
             for (SmsHistoryVO smsHistoryVO : smsHistoryVOS) {
                 if(smsHistoryVO.getSmsValue().contains("복구완료")){
@@ -73,16 +73,16 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
         }
     }
 
-    private List<SmsHistoryVO> readSmsHistory(String servername) throws IOException {
+    private List<SmsHistoryVO> readSmsHistory(String servername, String telNum, String selectDelay) throws IOException {
         System.out.println(LocalDateTime.now() + " - " + servername + " - 조회 시작");
         String query = String.format("select *\n" +
                 "from SMS_HISTORY\n" +
-                "where mobile_no = '010-4693-8128'\n" +
+                "where mobile_no = '%s'\n" +
                 "and sms_value like '%%<복구%%'\n" +
                 "and sms_value like '%%%s%%'\n" +
-                "and decision_date between systimestamp - interval '30' second and systimestamp\n" +
+                "and decision_date between systimestamp - interval '%s' second and systimestamp\n" +
                 "order by decision_date desc, smsForm_id asc" +
-                "",servername);
+                "", telNum, servername, selectDelay);
 
         List<SmsHistoryVO> smsHistoryVOS = new ArrayList<>();
         smsHistoryVOS = jdbcTemplate.query(query, new BeanPropertyRowMapper<>(SmsHistoryVO.class));
