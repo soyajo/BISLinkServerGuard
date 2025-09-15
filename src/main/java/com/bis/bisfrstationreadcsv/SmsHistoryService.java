@@ -37,7 +37,9 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
                     // 재기동 시작
                     if (serverName.contains("EB")) {
                         killProcess("EBDataClt1.exe");
-                        killProcess("EBCommclt1.exe");
+                        killProcess("EBCommClt1.exe");
+                        killProcess("EBDataClt.exe");
+                        killProcess("EBCommClt.exe");
                     } else if (serverName.contains("지자체")) {
                         killProcess("PTIECommsvr.exe");
                         killProcess("PTIEDataSvr.exe");
