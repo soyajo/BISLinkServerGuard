@@ -68,7 +68,7 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
                         // 데이터 체크 프로세스 작성
                         killProcess("SDCSvr.exe");
                         killProcess("SDDSvr.exe");
-                        killProcess("DataCheckPrj.exe");
+                        killProcess("DataCheckprj.exe");
                     }
                     break;
                     // 자동으로 켜지는 건 알아서 다른 프로그램에서 됌
@@ -135,9 +135,9 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
         if (serverName.contains("EB")) {
             return Arrays.asList("EBDataClt1", "EBCommClt1", "EBDataClt", "EBCommClt");
         } else if (serverName.contains("지자체")) {
-            return Arrays.asList("PTIECommsvr", "PTIEDataSvr");
+            return Arrays.asList("PTIECommsvr",  "PTIEDatasvr", "PTIECommSvr", "PTIEDataSvr");
         } else if (serverName.contains("시설물")) {
-            return Arrays.asList("SDCSvr", "SDDSvr", "DataCheckPrj");
+            return Arrays.asList("SDCSvr", "SDDSvr", "DataCheckprj");
         }
         return Collections.emptyList();
     }
