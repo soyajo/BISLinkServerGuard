@@ -11,6 +11,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public interface SmsHistoryService {
@@ -27,7 +29,26 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
     private String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
     public void checkServer(String serverName, String telNum, String selectDelay) throws IOException {
+        // ✅ 1. 먼저 중복 프로세스 감지 및 종료
+        List<String> targetProcesses = getTargetProcesses(serverName);
 
+        for (String processName : targetProcesses) {
+            List<Integer> pids = getProcessPids(processName);
+
+            if (pids.size() > 1) { // 동일 프로세스 2개 이상일 경우
+                System.out.println("⚠ 중복 프로세스 발견: " + processName + " (" + pids.size() + "개)");
+                // 첫 번째만 남기고 나머지는 종료
+                for (int i = 1; i < pids.size(); i++) {
+                    killProcessByPid(pids.get(i));
+                }
+            } else if (pids.size() == 1) {
+                System.out.println("✅ 정상: " + processName + " (1개 실행 중)");
+            } else {
+                System.out.println("❌ 실행 중 아님: " + processName);
+            }
+        }
+
+        // ✅ 2. 이후 SMS 내역 확인 및 복구 처리
         List<SmsHistoryVO> smsHistoryVOS = this.readSmsHistory(serverName, telNum, selectDelay);
         if(smsHistoryVOS != null && smsHistoryVOS.size() > 0) {
             for (SmsHistoryVO smsHistoryVO : smsHistoryVOS) {
@@ -106,6 +127,56 @@ class SmsHistoryServiceImpl implements  SmsHistoryService {
             bw.newLine();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    // ✅ 서버 이름에 따른 감시 대상 프로세스 목록
+    private static List<String> getTargetProcesses(String serverName) {
+        if (serverName.contains("EB")) {
+            return Arrays.asList("EBDataClt1", "EBCommClt1", "EBDataClt", "EBCommClt");
+        } else if (serverName.contains("지자체")) {
+            return Arrays.asList("PTIECommsvr", "PTIEDataSvr");
+        } else if (serverName.contains("시설물")) {
+            return Arrays.asList("SDCSvr", "SDDSvr", "DataCheckPrj");
+        }
+        return Collections.emptyList();
+    }
+
+    // ✅ 해당 프로세스 이름으로 실행 중인 PID 목록 조회
+    private static List<Integer> getProcessPids(String processName) {
+        List<Integer> pidList = new ArrayList<>();
+        try {
+            Process process = Runtime.getRuntime().exec(
+                    new String[]{"cmd", "/c", "tasklist /FI \"IMAGENAME eq " + processName + ".exe\""}
+            );
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith(processName)) {
+                    // 예시: EBDataClt.exe          1234 Console    1     14,232 K
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length > 1 && parts[1].matches("\\d+")) {
+                        pidList.add(Integer.parseInt(parts[1]));
+                    }
+                }
+            }
+            process.waitFor();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return pidList;
+    }
+
+    // ✅ PID로 프로세스 종료
+    private static void killProcessByPid(int pid) {
+        try {
+            Process killProcess = Runtime.getRuntime().exec(
+                    new String[]{"cmd", "/c", "taskkill /PID " + pid + " /F"}
+            );
+            killProcess.waitFor();
+            System.out.println("🛑 종료됨: PID " + pid);
+        } catch (Exception e) {
+            System.err.println("❌ 종료 실패 (PID: " + pid + "): " + e.getMessage());
         }
     }
 
